@@ -1,0 +1,6 @@
+pymongo
+python-telegram-bot
+spacy
+idiomatch
+lemminflect
+python-dotenv
