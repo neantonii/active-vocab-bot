@@ -26,5 +26,6 @@ class UsageStatisticRecord(UsageStatistic):
     last_level_achieved: Optional[datetime] = Field(None)
     next_level_reminder: Optional[datetime] = Field(None)
     parts_of_speech: List[POSUsageStatistic] = Field([])
+    ignored: Optional[bool] = Field(False)
 
 

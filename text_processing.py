@@ -1,5 +1,5 @@
 # pip install -U spacy
-# python -m spacy download en_core_web_trf
+# python -m spacy download en_core_web_sm
 import json
 import os
 from collections import Counter, defaultdict
@@ -21,12 +21,12 @@ class SentenceSplitter:
             Idiomatcher.from_pretrained(self.nlp)
 
     def process(self, sentence):
-        usages = set()
+        usages = []
         tokens = self.nlp(sentence)
         for token in tokens:
             if  token.pos_ == 'PUNCT':
                 continue
-            usages.add(WordInSentence(lemma=token.lemma_, pos=token.pos_))
+            usages.append(WordInSentence(lemma=token.lemma_, pos=token.pos_))
         if self.extract_idioms:
             pass
             # idioms = set()
