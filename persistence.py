@@ -18,6 +18,7 @@ class Persister:
     def __init__(self, db: Database, user_id, start_skip=500):
         self.statistic_records = str(user_id) + '_usage_statistic_records'
         self.inputs = str(user_id) + '_inputs'
+        self.user_id = user_id
         self.db = db
         self.start_skip=start_skip
         db[self.statistic_records].create_index([('lemma', pymongo.ASCENDING)])
@@ -97,3 +98,5 @@ class Persister:
 
         record.corpus_frequency = freq
         self.db[self.statistic_records].update_one({'lemma': lemma}, {'$set': record.dict()}, upsert=True)
+
+    def update_user_settings(self):
