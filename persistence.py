@@ -91,7 +91,7 @@ class Persister:
         new_ones = list(new_ones)
         if len(new_ones) == 0:
             return None
-        print(f'[{freq_thresh}] selecting at random a new word from {[s["lemma"] for s in stales]}')
+        print(f'[{freq_thresh}] selecting at random a new word from {[s["lemma"] for s in new_ones]}')
         return random.choice(new_ones)
 
     def get_recommended(self):
