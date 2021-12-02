@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 
 import pymongo
@@ -8,6 +9,7 @@ from entities import WordInSentence, UsageStatisticRecord, POSUsageStatistic, Us
 
 class Persister:
     NO_WORD = '???'
+    randomness = 10
 
     @classmethod
     def next_level_reps(cls, level):
@@ -71,27 +73,29 @@ class Persister:
 
     def get_recommended(self):
         now = datetime.utcnow()
-        stale = self.db[self.statistic_records_col].find_one({'next_level_reminder': {'$lt': now}, 'ignored': {'$ne': True}},
-                                                             sort=[('next_level_reminder', pymongo.ASCENDING)])
-        if stale is not None:
-            self.last_recommended = stale['lemma']
-            return stale['lemma']
+        stales = self.db[self.statistic_records_col].find({'next_level_reminder': {'$lt': now}, 'ignored': {'$ne': True}},
+                                                             sort=[('next_level_reminder', pymongo.ASCENDING)], limit=Persister.randomness)
+        stales = list(stales)
+        if len(stales) > 0:
+            self.last_recommended = random.choice(stales)['lemma']
+            return self.last_recommended
         if self.total_learned > self.settings.start_skip*2:
-            new_one = self.db[self.statistic_records_col].find_one({'memory_level': 0, 'ignored': {'$ne': True}},
-                                                                   sort=[('corpus_frequency', pymongo.DESCENDING)])
+            new_ones = self.db[self.statistic_records_col].find({'memory_level': 0, 'ignored': {'$ne': True}},
+                                                                   sort=[('corpus_frequency', pymongo.DESCENDING)], limit=Persister.randomness)
         else:
             freq_thresh = self.db[self.statistic_records_col].find_one({},
                                                                        sort=[('corpus_frequency', pymongo.DESCENDING)], skip=self.settings.start_skip)
             if freq_thresh is None:
                 self.last_recommended = Persister.NO_WORD
                 return Persister.NO_WORD
-            new_one = self.db[self.statistic_records_col]\
-                .find_one({'corpus_frequency': {'$lte': freq_thresh['corpus_frequency']},
+            new_ones = self.db[self.statistic_records_col]\
+                .find({'corpus_frequency': {'$lte': freq_thresh['corpus_frequency']},
                            'memory_level': 0, 'ignored': {'$ne': True}},
-                          sort=[('corpus_frequency', pymongo.DESCENDING)])
-        if new_one is not None:
-            self.last_recommended = new_one['lemma']
-            return new_one['lemma']
+                          sort=[('corpus_frequency', pymongo.DESCENDING)], limit=Persister.randomness)
+        new_ones = list(new_ones)
+        if len(new_ones) > 0:
+            self.last_recommended = random.choice(new_ones)['lemma']
+            return self.last_recommended
         self.last_recommended = Persister.NO_WORD
         return Persister.NO_WORD
 
