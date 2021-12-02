@@ -80,6 +80,7 @@ class Persister:
         stales = list(stales)
         if len(stales) == 0:
             return None
+        print(f'[{freq_thresh}] selecting at random a stale word from {stales}')
         return random.choice(stales)
 
     def get_new(self, freq_thresh = None):
@@ -90,6 +91,7 @@ class Persister:
         new_ones = list(new_ones)
         if len(new_ones) == 0:
             return None
+        print(f'[{freq_thresh}] selecting at random a new word from {new_ones}')
         return random.choice(new_ones)
 
     def get_recommended(self):
