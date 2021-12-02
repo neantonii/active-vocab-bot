@@ -28,4 +28,8 @@ class UsageStatisticRecord(UsageStatistic):
     parts_of_speech: List[POSUsageStatistic] = Field([])
     ignored: Optional[bool] = Field(False)
 
+class UserSettings(BaseModel):
+    user_id: int = Field(...)
+    start_skip: int = Field(500)
+
 
