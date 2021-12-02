@@ -71,31 +71,54 @@ class Persister:
 
         self.db[self.statistic_records_col].update_one({'lemma': wd.lemma}, {'$set': rec.dict()}, upsert=True)
 
+
+    def get_stale(self, now, freq_thresh = None):
+        filter = {'next_level_reminder': {'$lt': now}, 'ignored': {'$ne': True}}
+        if freq_thresh is not None: filter['corpus_frequency'] = {'$lte': freq_thresh}
+        stales = self.db[self.statistic_records_col].find( filter, sort=[('next_level_reminder', pymongo.ASCENDING)],
+                                                           limit=Persister.randomness)
+        stales = list(stales)
+        if len(stales) == 0:
+            return None
+        return random.choice(stales)
+
+    def get_new(self, freq_thresh = None):
+        filter = {'memory_level': 0, 'ignored': {'$ne': True}}
+        if freq_thresh is not None: filter['corpus_frequency'] = {'$lte': freq_thresh}
+        new_ones = self.db[self.statistic_records_col].find(filter, sort=[('corpus_frequency', pymongo.DESCENDING)],
+                                                            limit=Persister.randomness)
+        new_ones = list(new_ones)
+        if len(new_ones) == 0:
+            return None
+        return random.choice(new_ones)
+
     def get_recommended(self):
         now = datetime.utcnow()
-        stales = self.db[self.statistic_records_col].find({'next_level_reminder': {'$lt': now}, 'ignored': {'$ne': True}},
-                                                             sort=[('next_level_reminder', pymongo.ASCENDING)], limit=Persister.randomness)
-        stales = list(stales)
-        if len(stales) > 0:
-            self.last_recommended = random.choice(stales)['lemma']
+        use_skipped_chance = 0.5 * min(self.total_learned / self.settings.start_skip, 1)
+        repeat_stale_chance = .7
+
+        freq_thresh = self.db[self.statistic_records_col].find_one({},
+                                                                   sort=[('corpus_frequency', pymongo.DESCENDING)],
+                                                                   skip=self.settings.start_skip)['corpus_frequency']
+        if freq_thresh is None:
+            use_skipped_chance = 1
+
+        def use(res):
+            self.last_recommended = res['lemma']
             return self.last_recommended
-        if self.total_learned > self.settings.start_skip*2:
-            new_ones = self.db[self.statistic_records_col].find({'memory_level': 0, 'ignored': {'$ne': True}},
-                                                                   sort=[('corpus_frequency', pymongo.DESCENDING)], limit=Persister.randomness)
-        else:
-            freq_thresh = self.db[self.statistic_records_col].find_one({},
-                                                                       sort=[('corpus_frequency', pymongo.DESCENDING)], skip=self.settings.start_skip)
-            if freq_thresh is None:
-                self.last_recommended = Persister.NO_WORD
-                return Persister.NO_WORD
-            new_ones = self.db[self.statistic_records_col]\
-                .find({'corpus_frequency': {'$lte': freq_thresh['corpus_frequency']},
-                           'memory_level': 0, 'ignored': {'$ne': True}},
-                          sort=[('corpus_frequency', pymongo.DESCENDING)], limit=Persister.randomness)
-        new_ones = list(new_ones)
-        if len(new_ones) > 0:
-            self.last_recommended = random.choice(new_ones)['lemma']
-            return self.last_recommended
+
+        if random.random() < repeat_stale_chance:
+            if random.random() < use_skipped_chance:
+                res = self.get_stale(now)
+                if res is not None: return use(res)
+            res = self.get_stale(now, freq_thresh)
+            if res is not None: return use(res)
+        if random.random() < use_skipped_chance:
+            res = self.get_new()
+            if res is not None: return use(res)
+        res = self.get_new(freq_thresh)
+        if res is not None: return use(res)
+
         self.last_recommended = Persister.NO_WORD
         return Persister.NO_WORD
 
