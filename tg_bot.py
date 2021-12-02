@@ -38,7 +38,7 @@ def toggle_ignore(update: Update, context: CallbackContext):
     if len(context.args) > 0:
         lemma = context.args[0].lower().strip()
     else:
-        lemma = persister.get_recommended()
+        lemma = persister.last_recommended
     res = persister.toggle_ignore(lemma)
     if res is None:
         context.bot.send_message(chat_id=update.effective_chat.id, text=f'Could not find lemma {lemma}!')
@@ -59,6 +59,16 @@ def setup_words(update, context):
     do_word_list_setup(persister)
     send_recommendation(context, update)
 
+def update_difficulty(update, context):
+    persister = persisters.get(update.message.from_user['id'])
+    try:
+        difficulty = int(context.args[0])
+    except:
+        difficulty = persister.settings.start_skip
+    persister.update_settings(start_skip=difficulty)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=f'Difficulty set to "{difficulty}"')
+    send_recommendation(context, update)
+
 
 def run_bot(TG_BOT_API_KEY):
     updater = Updater(token=TG_BOT_API_KEY)
@@ -66,6 +76,7 @@ def run_bot(TG_BOT_API_KEY):
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('ignore', toggle_ignore))
     dispatcher.add_handler(CommandHandler('setup', setup_words))
+    dispatcher.add_handler(CommandHandler('difficulty', update_difficulty))
     dispatcher.add_handler(MessageHandler(None, handle_message))
     updater.start_polling()
 
