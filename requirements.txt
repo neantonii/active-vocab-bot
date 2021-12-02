@@ -4,3 +4,4 @@ spacy
 idiomatch
 lemminflect
 python-dotenv
+pyenchant

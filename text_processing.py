@@ -26,7 +26,7 @@ class SentenceSplitter:
         for token in tokens:
             if  token.pos_ == 'PUNCT':
                 continue
-            usages.append(WordInSentence(lemma=token.lemma_.lower(), pos=token.pos_))
+            usages.append(WordInSentence(lemma=token.lemma_.lower(), pos=token.pos_, word=str(token)))
         if self.extract_idioms:
             pass
             # idioms = set()

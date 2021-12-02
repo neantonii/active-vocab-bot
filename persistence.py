@@ -6,7 +6,6 @@ from pymongo.database import Database
 
 from entities import WordInSentence, UsageStatisticRecord, POSUsageStatistic, UserSettings
 
-
 class Persister:
     NO_WORD = '???'
     randomness = 10
@@ -49,7 +48,9 @@ class Persister:
         self.db[self.inputs_col].insert_one({'dt': datetime.now(), 'text': text})
 
     def update_statistics(self, wd: WordInSentence):
-        existing = self.db[self.statistic_records_col].find_one({'lemma': wd.lemma})
+        existing = self.db[self.statistic_records_col].find_one({'lemma': wd.word})
+        if existing is None:
+            existing = self.db[self.statistic_records_col].find_one({'lemma': wd.lemma})
         now = datetime.utcnow()
         if existing:
             rec: UsageStatisticRecord = UsageStatisticRecord.parse_obj(existing)
@@ -101,9 +102,12 @@ class Persister:
 
         freq_thresh = self.db[self.statistic_records_col].find_one({},
                                                                    sort=[('corpus_frequency', pymongo.DESCENDING)],
-                                                                   skip=self.settings.start_skip)['corpus_frequency']
+                                                                   skip=self.settings.start_skip)
         if freq_thresh is None:
             use_skipped_chance = 1
+            freq_thresh = 0
+        else:
+            freq_thresh = freq_thresh['corpus_frequency']
 
         def use(res):
             self.last_recommended = res['lemma']

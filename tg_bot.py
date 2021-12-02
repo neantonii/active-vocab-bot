@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler
 
-from word_list_setup import do_word_list_setup
+from word_list_setup import do_word_list_setup_internet
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -26,9 +26,9 @@ def send_recommendation(context, update):
 
 def start(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Initializing...")
+                             text="Initializing (it can take a minute)...")
     persister = persisters.get(update.message.from_user['id'])
-    do_word_list_setup(persister)
+    do_word_list_setup_internet(persister)
 
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text="Hello, to start just write me something (in English).")
@@ -56,7 +56,7 @@ def handle_message(update: Update, context: CallbackContext):
 
 def setup_words(update, context):
     persister = persisters.get(update.message.from_user['id'])
-    do_word_list_setup(persister)
+    do_word_list_setup_internet(persister)
     send_recommendation(context, update)
 
 def update_difficulty(update, context):
