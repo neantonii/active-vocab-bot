@@ -69,6 +69,14 @@ def update_difficulty(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=f'Difficulty set to "{difficulty}"')
     send_recommendation(context, update)
 
+def feed(update, context):
+    persister = persisters.get(update.message.from_user['id'])
+    for txt in persister.get_history():
+        wds = splitter.process(txt['text'])
+        for wd in wds:
+            persister.update_statistics(wd)
+    send_recommendation(context, update)
+
 
 def run_bot(TG_BOT_API_KEY):
     updater = Updater(token=TG_BOT_API_KEY)
@@ -77,6 +85,7 @@ def run_bot(TG_BOT_API_KEY):
     dispatcher.add_handler(CommandHandler('ignore', toggle_ignore))
     dispatcher.add_handler(CommandHandler('setup', setup_words))
     dispatcher.add_handler(CommandHandler('difficulty', update_difficulty))
+    dispatcher.add_handler(CommandHandler('feed', feed))
     dispatcher.add_handler(MessageHandler(None, handle_message))
     updater.start_polling()
 

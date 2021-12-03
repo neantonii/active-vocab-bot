@@ -48,9 +48,12 @@ class Persister:
         self.db[self.inputs_col].insert_one({'dt': datetime.now(), 'text': text})
 
     def update_statistics(self, wd: WordInSentence):
-        existing = self.db[self.statistic_records_col].find_one({'lemma': wd.word})
-        if existing is None:
-            existing = self.db[self.statistic_records_col].find_one({'lemma': wd.lemma})
+        existing_word = self.db[self.statistic_records_col].find_one({'lemma': wd.word})
+        existing_lemma = self.db[self.statistic_records_col].find_one({'lemma': wd.lemma})
+        if existing_lemma is not None and existing_word is not None:
+            existing = existing_word if existing_word['corpus_frequency'] > existing_lemma['corpus_frequency'] else existing_lemma
+        else:
+            existing = existing_word if existing_word is not None else existing_lemma
         now = datetime.utcnow()
         if existing:
             rec: UsageStatisticRecord = UsageStatisticRecord.parse_obj(existing)
@@ -151,4 +154,7 @@ class Persister:
         if start_skip is not None:
             self.settings.start_skip = start_skip
         self.db[self.settings_col].update_one({'user_id': self.user_id}, {'$set': self.settings.dict()})
+
+    def get_history(self):
+        return self.db[self.inputs_col].find({}, sort=[('dt', pymongo.ASCENDING)])
 
